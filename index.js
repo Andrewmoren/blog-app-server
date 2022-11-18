@@ -30,7 +30,39 @@ app.post("/auth/login", async (req, res) => {
         message: "User not found",
       });
     }
-  } catch (error) {}
+
+    const isValidPass = await bcrypt.compare(
+      req.body.password,
+      user._doc.passwordHash
+    );
+    if (!isValidPass) {
+      return res.status(400).json({
+        message: "Incorrect login or password",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        _id: user._id,
+      },
+      "secret123",
+      {
+        expiresIn: "30d",
+      }
+    );
+
+    const { passwordHash, ...userData } = user._doc;
+
+    res.json({
+      ...userData,
+      token,
+    });
+  } catch (error) {
+    console.log(error);
+    res.json({
+      message: "Failed to log in",
+    });
+  }
 });
 
 app.post("/auth/register", registerValidation, async (req, res) => {
